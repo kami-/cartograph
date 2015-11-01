@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cartograph</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.min.js"></script>
+</head>
+<body>
+    <div id="replay">
+
+    </div>
+    <script>
+        $(document).ready(function() {
+            var $replay = $('#replay'),
+                paths = window.location.pathname.split('/');
+            if (paths.length !== 3 && paths[1] === 'replay') return;
+            var missionId = paths[2];
+            $.getJSON('/api/replay/' + missionId).done(function(replay) {
+                $replay.append('<div>' + JSON.stringify(replay.mission) + '</div>');
+                window.replay = replay;
+                initReplay(replay);
+                replayTick(replay, $replay);
+            }).fail(function() {
+                $replay.html("No mission found with ID '" + missionId + "'!");
+            });
+
+            function replayTick(replay, $replay) {
+                replay.time += replay.speed;
+                if (replay.time > replay.maxTime) return;
+                $replay.append('<div>' + replay.time + '</div>');
+                window.setTimeout(function() {
+                    replayTick(replay, $replay);
+                }, 1000);
+            }
+
+            function initReplay(replay) {
+                replay.time = 0;
+                replay.speed = 5;
+                var maxPlayerTime = maxMovementTime(replay.playerMovements),
+                    maxAiTime = maxMovementTime(replay.aiMovements);
+                replay.maxTime = maxPlayerTime > maxAiTime ? maxPlayerTime : maxAiTime;
+            }
+
+            function maxMovementTime(movements) {
+                return _.chain(movements)
+                    .keys()
+                    .map(function(time) { return parseInt(time, 10); })
+                    .max()
+                    .value();
+            }
+        })
+    </script>
+</body>
+</html>
