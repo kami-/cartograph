@@ -21,6 +21,15 @@ class DefaultMissionDao @Autowired constructor(val jdbcTemplate: JdbcTemplate) :
         return jdbcTemplate.query(sql, { rs, rn -> mapMission(rs) }).filter { isDuringSession(it.created) }
     }
 
+    override fun getById(id: Int): Mission? {
+        val sql = "SELECT * FROM mission WHERE id = ?"
+        val missions = jdbcTemplate.query(sql, arrayOf(id), { rs, rn -> mapMission(rs) })
+        return when(missions.isEmpty()) {
+            true -> null
+            else -> missions[0]
+        }
+    }
+
     private fun mapMission(resultSet: ResultSet): Mission {
         return Mission(
             resultSet.getInt("id"),
