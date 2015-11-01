@@ -5,7 +5,7 @@ import org.joda.time.DateTime
 data class Player(
     val id: Int,
     val created: DateTime,
-    val createdIngame: Int,
+    val createdIngame: Float,
     val missionId: Int,
     val uid: String,
     val name: String,
@@ -13,5 +13,5 @@ data class Player(
     val groupName: String,
     val isJip: Boolean,
     val death: DateTime?,
-    val deathIngame: Int?
+    val deathIngame: Float?
 )

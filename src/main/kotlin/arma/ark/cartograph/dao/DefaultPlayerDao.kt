@@ -19,7 +19,7 @@ class DefaultPlayerDao @Autowired constructor(val jdbcTemplate: JdbcTemplate) : 
         return Player(
             resultSet.getInt("id"),
             DATE_FORMATTER.parseDateTime(resultSet.getString("created")),
-            resultSet.getInt("created_ingame"),
+            resultSet.getFloat("created_ingame"),
             resultSet.getInt("mission_id"),
             resultSet.getString("player_uid"),
             resultSet.getString("player_name"),
@@ -27,7 +27,7 @@ class DefaultPlayerDao @Autowired constructor(val jdbcTemplate: JdbcTemplate) : 
             resultSet.getString("group_name"),
             resultSet.getBoolean("is_jip"),
             parseNullDate(resultSet.getString("death")),
-            resultSet.getInt("death_ingame")
+            resultSet.getFloat("death_ingame")
         )
     }
 }

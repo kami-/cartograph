@@ -27,9 +27,9 @@ class DefaultMissionDao @Autowired constructor(val jdbcTemplate: JdbcTemplate) :
             resultSet.getString("mission_name"),
             resultSet.getString("world_name"),
             parseNullDate(resultSet.getString("safety_timer")),
-            resultSet.getInt("safety_timer_ingame"),
+            resultSet.getFloat("safety_timer_ingame"),
             parseNullDate(resultSet.getString("end")),
-            resultSet.getInt("end_ingame")
+            resultSet.getFloat("end_ingame")
         )
     }
 }

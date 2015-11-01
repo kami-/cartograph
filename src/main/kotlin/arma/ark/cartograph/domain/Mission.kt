@@ -8,7 +8,7 @@ data class Mission(
     val name: String,
     val worldName: String,
     val safetyTimer: DateTime?,
-    val safetyTimerIngame: Int?,
+    val safetyTimerIngame: Float?,
     val end: DateTime?,
-    val endIngame: Int?
+    val endIngame: Float?
 )
