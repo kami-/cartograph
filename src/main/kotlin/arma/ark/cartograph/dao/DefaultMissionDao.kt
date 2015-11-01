@@ -3,6 +3,7 @@ package arma.ark.cartograph.dao
 import arma.ark.cartograph.domain.SimpleMission
 import arma.ark.cartograph.domain.Mission
 import arma.ark.cartograph.util.date.DATE_FORMATTER
+import arma.ark.cartograph.util.date.isDuringSession
 import arma.ark.cartograph.util.date.parseNullDate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.JdbcTemplate
@@ -17,7 +18,7 @@ class DefaultMissionDao @Autowired constructor(val jdbcTemplate: JdbcTemplate) :
 
     override fun getAll(): List<Mission> {
         val sql = "SELECT * FROM mission ORDER BY created DESC"
-        return jdbcTemplate.query(sql, { rs, rn -> mapMission(rs) })
+        return jdbcTemplate.query(sql, { rs, rn -> mapMission(rs) }).filter { isDuringSession(it.created) }
     }
 
     private fun mapMission(resultSet: ResultSet): Mission {
