@@ -3,12 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>Cartograph</title>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-1.0.0-b1/leaflet.css" />
+    <!--<script src="http://cdn.leafletjs.com/leaflet-1.0.0-b1/leaflet.js"></script>-->
+    <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.rawgit.com/ardhi/Leaflet.MousePosition/master/src/L.Control.MousePosition.css">
+    <script type="text/javascript" src="https://cdn.rawgit.com/ardhi/Leaflet.MousePosition/master/src/L.Control.MousePosition.js"></script>
+
+    <style type="text/css">
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+        .leaflet-control-scale-line {
+            box-sizing: border-box;
+        }
+
+        .player-icon {
+            border-radius: 6px;
+        }
+
+        .side-opfor {
+            background-color: red;
+        }
+
+        .side-indfor {
+            background-color: green;
+        }
+
+    </style>
 </head>
 <body>
-    <div id="replay">
-
+    <div id="replay" style="width: 100%; height: 100%;">
     </div>
     <script>
         $(document).ready(function() {
@@ -17,37 +47,106 @@
             if (paths.length !== 3 && paths[1] === 'replay') return;
             var missionId = paths[2];
             $.getJSON('/api/replay/' + missionId).done(function(replay) {
-                $replay.append('<div>' + JSON.stringify(replay.mission) + '</div>');
                 window.replay = replay;
+                replay.map = initMap(replay.mission.world);
+                replay.playerMarkers = {};
+                replay.aiMarkers = {};
                 initReplay(replay);
-                replayTick(replay, $replay);
+                replayTick(replay);
             }).fail(function() {
                 $replay.html("No mission found with ID '" + missionId + "'!");
             });
 
-            function replayTick(replay, $replay) {
+            function replayTick(replay) {
                 replay.time += replay.speed;
-                if (replay.time > replay.maxTime) return;
-                $replay.append('<div>' + replay.time + '</div>');
+                if (replay.time > replay.maxTime) {
+                    console.log('MISSION END');
+                    return;
+                }
+                processTick(replay);
                 window.setTimeout(function() {
-                    replayTick(replay, $replay);
+                    replayTick(replay);
                 }, 1000);
+            }
+
+            function processTick(replay) {
+                var opforIcon = L.divIcon({ iconSite: [12, 12], className: 'player-icon side-opfor' });
+                    indforIcon = L.divIcon({ iconSite: [12, 12], className: 'player-icon side-indfor' });
+                _(tickMovements(replay, replay.playerMovements))
+                    //.concat(tickMovements(replay, replay.aiMovements))
+                    .each(function(m) {
+                        var marker = replay.playerMarkers[m.playerId],
+                            markerPos = gameToMap(replay.map, [m.position.x, m.position.y]),
+                            player = _(replay.players).find(function(p) { return p.id === m.playerId; });
+                        if (marker) {
+                            marker.setLatLng(markerPos);
+                        } else {
+                            marker = L.marker(markerPos, { icon: player.groupName[0] === 'O' ? opforIcon : indforIcon }).addTo(replay.map);
+                            replay.playerMarkers[m.playerId] = marker;
+                        }
+                    }).value();
             }
 
             function initReplay(replay) {
                 replay.time = 0;
-                replay.speed = 5;
+                replay.speed = 20;
                 var maxPlayerTime = maxMovementTime(replay.playerMovements),
                     maxAiTime = maxMovementTime(replay.aiMovements);
                 replay.maxTime = maxPlayerTime > maxAiTime ? maxPlayerTime : maxAiTime;
             }
 
             function maxMovementTime(movements) {
-                return _.chain(movements)
-                    .keys()
-                    .map(function(time) { return parseInt(time, 10); })
-                    .max()
+                return movements.length > 0 ? movements[movements.length - 1].createdIngame : -1;
+            }
+
+            // We know that the array is ordered by createdIngame.
+            function tickMovements(replay, movements) {
+                var previousTime = replay.time - replay.speed;
+                return _(movements)
+                    .takeWhile(function(m) { return Math.floor(m.createdIngame) <= replay.time; })
+                    .dropWhile(function(m) { return Math.floor(m.createdIngame) <= previousTime; })
                     .value();
+            }
+
+            // Fastest way to do it, however hard to understand. Going to use a more functional approach.
+            /*
+            function processTickMovements(replay, movementsTypeIndex, movements) {
+                var i = replay[movementsTypeIndex];
+                while (i < movements.length && movements[i].createdIngame <= replay.time) {
+
+                    i++;
+                }
+                replay[movementsTypeIndex] = i;
+            }
+            */
+
+            function gameToMap(map, position) {
+                return map.unproject([position[0], -position[1]], map.getMaxZoom())
+            }
+
+            function initMap(world) {
+                var map = L.map('replay', {
+                    minZoom: world.minZoom,
+                    maxZoom: world.maxZoom,
+                    crs: L.CRS.Simple
+                });
+                map.setView(gameToMap(map, [world.width / 2, world.height / 2]), map.getMinZoom());
+                var mapBounds = new L.LatLngBounds(
+                    gameToMap(map, [0, world.height]),
+                    gameToMap(map, [world.width, 0])
+                );
+                map.fitBounds(mapBounds);
+                L.tileLayer('/images/map/{w}/{z}/{x}/{y}.png?s=111111', {
+                    minZoom: map.getMinZoom(),
+                    maxZoom: map.getMaxZoom(),
+                    bounds: mapBounds,
+                    continuousWorld: true,
+                    attribution: '',
+                    noWrap: true,
+                    tms: true,
+                    w: world.name.toLowerCase()
+                }).addTo(map);
+                return map;
             }
         })
     </script>

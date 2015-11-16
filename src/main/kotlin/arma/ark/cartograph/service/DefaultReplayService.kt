@@ -17,8 +17,8 @@ class DefaultReplayService @Autowired constructor(
 
     override fun getByMissionId(missionId: Int): Replay? {
         val mission = missionDao.getById(missionId) ?: return null
-        val playerMovements = playerMovementDao.getAllByMissionId(missionId).groupBy { it.createdIngame.toInt() }
-        val aiMovements = aiMovementDao.getAllByMissionId(missionId).groupBy { it.createdIngame.toInt() }
+        val playerMovements = playerMovementDao.getAllByMissionId(missionId).sortedBy { it.createdIngame.toInt() }
+        val aiMovements = aiMovementDao.getAllByMissionId(missionId).sortedBy { it.createdIngame.toInt() }
         return Replay(mission, playerDao.getAllByMissionId(missionId), playerMovements, aiMovements)
     }
 }

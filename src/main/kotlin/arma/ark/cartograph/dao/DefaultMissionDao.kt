@@ -2,6 +2,7 @@ package arma.ark.cartograph.dao
 
 import arma.ark.cartograph.domain.SimpleMission
 import arma.ark.cartograph.domain.Mission
+import arma.ark.cartograph.util.world.WORLDS
 import arma.ark.cartograph.util.date.DATE_FORMATTER
 import arma.ark.cartograph.util.date.isDuringSession
 import arma.ark.cartograph.util.date.parseNullDate
@@ -13,7 +14,7 @@ import java.sql.ResultSet
 @Component
 class DefaultMissionDao @Autowired constructor(val jdbcTemplate: JdbcTemplate) : MissionDao {
     override fun getAllSimple(): List<SimpleMission> {
-        return getAll().map { SimpleMission(it.id, it.created, it.name, it.worldName) }
+        return getAll().map { SimpleMission(it.id, it.created, it.name, it.world.name) }
     }
 
     override fun getAll(): List<Mission> {
@@ -35,7 +36,8 @@ class DefaultMissionDao @Autowired constructor(val jdbcTemplate: JdbcTemplate) :
             resultSet.getInt("id"),
             DATE_FORMATTER.parseDateTime(resultSet.getString("created")),
             resultSet.getString("mission_name"),
-            resultSet.getString("world_name"),
+            //resultSet.getString("world_name"),
+            WORLDS.getOrImplicitDefault("chernarus"),
             parseNullDate(resultSet.getString("safety_timer")),
             resultSet.getFloat("safety_timer_ingame"),
             parseNullDate(resultSet.getString("end")),

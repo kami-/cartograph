@@ -6,7 +6,7 @@ data class Mission(
     val id: Int,
     val created: DateTime,
     val name: String,
-    val worldName: String,
+    val world: World,
     val safetyTimer: DateTime?,
     val safetyTimerIngame: Float?,
     val end: DateTime?,
