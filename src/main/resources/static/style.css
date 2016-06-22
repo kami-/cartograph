@@ -1,0 +1,176 @@
+* {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-size: 16px;
+    background-color: #fff;
+    color: #000;
+    font-family: "Poppins", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+#header {
+    padding: 8px;
+    background-color: #294546;
+    color: #fff;
+}
+
+#header .title {
+    font-size: 30px;
+}
+
+.center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#container {
+    width: 90%;
+}
+
+#mission {
+    margin-top: 20px;
+    width: 100%;
+}
+
+#search {
+    width: 100%;
+    padding-left: 30px;
+}
+
+.control {
+    display: inline-block;
+    margin-right: 40px;
+    margin-bottom: 15px;
+}
+
+.control .label {
+    margin-right: 10px;
+    color: #707070;
+}
+
+.control .value {
+    font-size: 16px;
+    padding: 2px;
+    width: 200px;
+}
+
+#mission-table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+#mission-table > thead > tr > th {
+    padding: 8px;
+    text-align: left;
+}
+
+#mission-table > tbody > tr {
+    border-top: 1px solid #ccc;
+}
+
+#mission-table > tbody > tr:hover {
+    background-color: #f5f5f5;
+}
+
+#mission-table > tbody > tr > td {
+    padding: 8px;
+    vertical-align: middle;
+}
+
+th.name, td.name {
+    width: 250px;
+}
+
+th.type, td.type {
+    width: 70px;
+}
+
+th.world, td.world {
+    width: 180px;
+}
+
+th.players, td.players {
+    width: 80px;
+}
+
+th.session, td.session {
+    width: 105px;
+}
+
+th.duration, td.duration {
+    width: 110px;
+}
+
+th.weather , td.weather {
+    width: 120px;
+}
+
+th.time , td.time {
+    width: 100px;
+}
+
+th.created, td.created {
+    width: 170px;
+}
+
+.mission-type {
+    width: 50px;
+    padding: 3px;
+    font-size: 14px;
+    color: #fff;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+}
+
+.mission-type.COOP {
+    background-color: #4a6785;
+}
+
+.mission-type.COTVT {
+    background-color: #4a6785;
+    filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1,startColorstr=#4a6785, endColorstr=#d04437);
+    background-image: -moz-linear-gradient(left, #4a6785 50%, #d04437 50%);
+    background-image: -webkit-linear-gradient(left, #4a6785 50%, #d04437 50%);
+    background-image: -ms-linear-gradient(left, #4a6785 50%, #d04437 50%);
+    background-image: linear-gradient(left, #4a6785 50%, #d04437 50%);
+    background-image: -o-linear-gradient(left, #4a6785 50%, #d04437 50%);
+    background-image: -webkit-gradient(linear, left bottom, right bottom, color-stop(50%,#4a6785), color-stop(50%,#d04437));
+}
+
+.mission-type.TVT {
+    background-color: #d04437;
+}
+
+.mission-type.GTVT {
+    background-color: #14892c;
+}
+
+.mission-type.UNKOWN {
+    background-color: #815b3a;
+}
+
+.weather {
+    width: 40px;
+    height: 40px;
+    vertical-align: middle;
+}
+
+.fog {
+    margin-left: 4px;
+    line-height: 40px;
+    vertical-align: middle;
+}
+
+#table-footer {
+    margin-top: 20px;
+    margin-bottom: 30px;
+    color: #707070;
+    text-align: center;
+}

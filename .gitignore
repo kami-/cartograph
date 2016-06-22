@@ -3,3 +3,9 @@
 /target
 /lib
 /db
+/map
+
+/src/main/resources/static/js
+/src/main/resources/webapp/.vscode
+/src/main/resources/webapp/node_modules
+/src/main/resources/webapp/typings

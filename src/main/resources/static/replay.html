@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Cartograph</title>
-    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-1.0.0-b1/leaflet.css" />
+    <!--<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-1.0.0-b1/leaflet.css" />-->
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
     <!--<script src="http://cdn.leafletjs.com/leaflet-1.0.0-b1/leaflet.js"></script>-->
     <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
@@ -13,48 +14,185 @@
     <script type="text/javascript" src="https://cdn.rawgit.com/ardhi/Leaflet.MousePosition/master/src/L.Control.MousePosition.js"></script>
 
     <style type="text/css">
-        html, body {
+        html, body, #replay-map {
             width: 100%;
             height: 100%;
             margin: 0;
+        }
+
+        #replay-controls {
+            position: absolute;
+            width: 50%;
+            height: 30px;
+            z-index: 1000000;
+            background-color: #fff;
+            left: 25%;
+            bottom: 30px;
+        }
+
+        #details-panel {
+            position: absolute;
+            width: 300px;
+            height: 450px;
+            z-index: 1000000;
+            background-color: #fff;
+            right: 0;
+            top: 0;
         }
 
         .leaflet-control-scale-line {
             box-sizing: border-box;
         }
 
-        .player-icon {
-            border-radius: 6px;
+        .icon {
+            position: absolute;
+            height: 6px;
+            width: 6px;
+            border-radius: 50%;
+            border: 2px solid blue;
+            cursor: pointer;
         }
 
-        .side-opfor {
-            background-color: red;
+        .icon.ai {
+            border-radius: 0;
         }
 
-        .side-indfor {
-            background-color: green;
+        .icon.blufor {
+            border-color: blue;
+        }
+        .icon-info.blufor {
+            color: blue;
+        }
+
+        .icon.opfor {
+            border-color: red;
+        }
+        .icon-info.opfor {
+            color: red;
+        }
+
+        .icon.indfor {
+            border-color: green;
+        }
+        .icon-info.indfor {
+            color: green;
+        }
+
+        .icon.civilian {
+            border-color: pink;
+        }
+        .icon-info.civilian {
+            color: pink;
+        }
+
+        .icon-info {
+            position: absolute;
+            top: -5px;
+            left: 12px;
+            width: 200px;
+            font-weight: bold;
+            font-size: 14px;
         }
 
     </style>
+
+    <script id="player-icon-template" type="text/template">
+        <div>
+            <span class="icon <%- player.side %>"></span>
+            <span class="icon-info <%- player.side %>"><%- player.name %></span>
+        </div>
+    </script>
+
+    <script id="ai-icon-template" type="text/template">
+        <div>
+            <span class="icon ai <%- movement.side %>"></span>
+            <span class="icon-info <%- movement.side %>"><%- movement.aliveCount %></span>
+        </div>
+    </script>
+
+    <script id="player-details-template" type="text/template">
+        <div><%- player.name %></div>
+        <div>
+            <div>
+                <span>Gear class:</span>
+                <span><%- player.hullGearClass %></span>
+            </div>
+            <div>
+                <span>Group:</span>
+                <span><%- player.groupName %></span>
+            </div>
+            <div>
+                <span>JIP:</span>
+                <span><%- player.isJip %></span>
+            </div>
+            <div>
+                <span>Position:</span>
+                <span>X: <%- movement.position.x %>, Y: <%- movement.position.y %></span>
+            </div>
+            <div>
+                <span>Vehicle:</span>
+                <span><%- movement.vehicle %></span>
+            </div>
+        </div>
+    </script>
+
 </head>
 <body>
-    <div id="replay" style="width: 100%; height: 100%;">
+    <div id="replay-controls">
+        <div class="replay-buttons">
+            <div id="play-button">Play</div>
+            <div id="next-button">Next</div>
+            <div id="previous-button">Previous</div>
+        </div>
+        <div id="replay-bar"></div>
     </div>
+    <div id="details-panel"></div>
+    <div id="replay-map"></div>
+
     <script>
         $(document).ready(function() {
-            var $replay = $('#replay'),
-                paths = window.location.pathname.split('/');
-            if (paths.length !== 3 && paths[1] === 'replay') return;
-            var missionId = paths[2];
-            $.getJSON('/api/replay/' + missionId).done(function(replay) {
-                window.replay = replay;
+            var PLAYER_ICON_TEMPLATE = _.template($('#player-icon-template').html()),
+                AI_ICON_TEMPLATE = _.template($('#ai-icon-template').html()),
+                PLAYER_DETAILS_TEMPLATE = _.template($('#player-details-template').html());
+
+            function createDetailsPanel() {
+                return {
+                    $elem: $('#details-panel'),
+                    selectedPlayerId: -1
+                };
+            }
+
+            function createReplayControls() {
+                return {
+                    $elem: $('#replay-controls')
+                };
+            }
+
+            function createReplay(replayData) {
+                var replay = replayData;
+                replay.$elem = $('#replay');
+                replay.time = 0;
+                replay.speed = 20;
+                var maxPlayerTime = maxMovementTime(replay.playerMovements),
+                    maxAiTime = maxMovementTime(replay.aiMovements);
+                replay.maxTime = maxPlayerTime > maxAiTime ? maxPlayerTime : maxAiTime;
                 replay.map = initMap(replay.mission.world);
                 replay.playerMarkers = {};
                 replay.aiMarkers = {};
-                initReplay(replay);
+                return replay;
+            }
+
+            var detailsPanel = createDetailsPanel(),
+                replayControls = createReplayControls(),
+                replay = {};
+
+            var paths = window.location.pathname.split('/');
+            if (paths.length !== 3 && paths[1] === 'replay') return;
+            var missionId = paths[2];
+            $.getJSON('/api/replay/' + missionId).done(function(replayData) {
+                replay = createReplay(replayData);
+                window.replay = replay;
                 replayTick(replay);
-            }).fail(function() {
-                $replay.html("No mission found with ID '" + missionId + "'!");
             });
 
             function replayTick(replay) {
@@ -63,17 +201,15 @@
                     console.log('MISSION END');
                     return;
                 }
-                processTick(replay);
-                window.setTimeout(function() {
+                processPlayerMovements(replay);
+                processAiMovements(replay);
+                replay.nextTimeoutId = window.setTimeout(function nextTimeoutTick() {
                     replayTick(replay);
                 }, 1000);
             }
 
-            function processTick(replay) {
-                var opforIcon = L.divIcon({ iconSite: [12, 12], className: 'player-icon side-opfor' });
-                    indforIcon = L.divIcon({ iconSite: [12, 12], className: 'player-icon side-indfor' });
+            function processPlayerMovements(replay) {
                 _(tickMovements(replay, replay.playerMovements))
-                    //.concat(tickMovements(replay, replay.aiMovements))
                     .each(function(m) {
                         var marker = replay.playerMarkers[m.playerId],
                             markerPos = gameToMap(replay.map, [m.position.x, m.position.y]),
@@ -81,18 +217,46 @@
                         if (marker) {
                             marker.setLatLng(markerPos);
                         } else {
-                            marker = L.marker(markerPos, { icon: player.groupName[0] === 'O' ? opforIcon : indforIcon }).addTo(replay.map);
+                            marker = createPlayerMarker(m, player, markerPos, replay.map);
                             replay.playerMarkers[m.playerId] = marker;
+                        }
+                        tryUpdateDetailsPanel(m, player);
+                    }).value();
+            }
+
+            function processAiMovements(replay) {
+                _(tickMovements(replay, replay.aiMovements))
+                    .each(function(m) {
+                        var marker = replay.aiMarkers[m.groupName],
+                            markerPos = gameToMap(replay.map, [m.position.x, m.position.y]);
+                        if (marker) {
+                            marker.setLatLng(markerPos);
+                            marker.setIcon(L.divIcon({ iconSize: [16, 16], className: '', html: AI_ICON_TEMPLATE({ movement: m }) }));
+                        } else {
+                            marker = createAiMarker(m, markerPos, replay.map);
+                            replay.aiMarkers[m.groupName] = marker;
                         }
                     }).value();
             }
 
-            function initReplay(replay) {
-                replay.time = 0;
-                replay.speed = 20;
-                var maxPlayerTime = maxMovementTime(replay.playerMovements),
-                    maxAiTime = maxMovementTime(replay.aiMovements);
-                replay.maxTime = maxPlayerTime > maxAiTime ? maxPlayerTime : maxAiTime;
+            function createPlayerMarker(movement, player, position, map) {
+                var icon = L.divIcon({ iconSize: [16, 16], className: '', html: PLAYER_ICON_TEMPLATE({ player: player }) });
+                var marker = L.marker(position, { icon: icon }).addTo(map);
+                marker.player = player;
+                marker.on('click', function onMarkerClick(e) {
+                    detailsPanel.selectedPlayerId = this.player.id;
+                });
+                return marker;
+            }
+
+            function createAiMarker(movement, position, map) {
+                var icon = L.divIcon({ iconSize: [16, 16], className: '', html: AI_ICON_TEMPLATE({ movement: movement }) });
+                return L.marker(position, { icon: icon }).addTo(map);
+            };
+
+            function tryUpdateDetailsPanel(movement, player) {
+                if (player.id !== detailsPanel.selectedPlayerId) return;
+                detailsPanel.$elem.html(PLAYER_DETAILS_TEMPLATE({ player: player, movement: movement }));
             }
 
             function maxMovementTime(movements) {
@@ -125,7 +289,7 @@
             }
 
             function initMap(world) {
-                var map = L.map('replay', {
+                var map = L.map('replay-map', {
                     minZoom: world.minZoom,
                     maxZoom: world.maxZoom,
                     crs: L.CRS.Simple
@@ -144,7 +308,7 @@
                     attribution: '',
                     noWrap: true,
                     tms: true,
-                    w: world.name.toLowerCase()
+                    w: world.name
                 }).addTo(map);
                 return map;
             }
