@@ -84,9 +84,7 @@ export class MissionRow extends React.Component<Mission, {}> {
 }
 
 export interface MissionTableProps {
-    maxVisible: number;
     missions: Mission[]
-    terms: SearchTerms;
 }
 
 export class MissionTalbe extends React.Component<MissionTableProps, {}> {
@@ -107,13 +105,7 @@ export class MissionTalbe extends React.Component<MissionTableProps, {}> {
                     </tr>
                 </thead>
                 <tbody>
-                    {this.props.missions
-                        .filter(m => m.name.search(new RegExp(this.props.terms.nameFilter, 'i')) >= 0)
-                        .filter(m => m.type.toString().search(new RegExp(this.props.terms.typeFilter, 'i')) >= 0)
-                        .filter(m => m.world.displayName.search(new RegExp(this.props.terms.worldFilter, 'i')) >= 0)
-                        .filter(m => `${m.session.week} ${m.session.day}`.search(new RegExp(this.props.terms.sessionFilter, 'i')) >= 0)
-                        .slice(0, this.props.maxVisible)
-                        .map(m => <MissionRow {...m} key={m.id} />)}
+                    {this.props.missions.map(m => <MissionRow {...m} key={m.id} />)}
                 </tbody>
             </table>
         );
@@ -200,11 +192,16 @@ export class MissionViewer extends React.Component<MissionViewerProps, MissionVi
     }
 
     render() {
+        let missions = this.props.missions.filter(m => m.name.search(new RegExp(this.state.terms.nameFilter, 'i')) >= 0)
+            .filter(m => m.type.toString().search(new RegExp(this.state.terms.typeFilter, 'i')) >= 0)
+            .filter(m => m.world.displayName.search(new RegExp(this.state.terms.worldFilter, 'i')) >= 0)
+            .filter(m => `${m.session.week} ${m.session.day}`.search(new RegExp(this.state.terms.sessionFilter, 'i')) >= 0)
+            .slice(0, this.props.maxVisible);
         return (
             <div id="mission">
                 <MissionSearch terms={this.state.terms} onSearch={this.handleSearch.bind(this)} />
-                <MissionTalbe maxVisible={this.props.maxVisible} missions={this.props.missions} terms={this.state.terms} />
-                <div id="table-footer">Maximum number of missions: {this.props.maxVisible} / Number of mission available: {this.props.missions.length}</div>
+                <MissionTalbe missions={missions} />
+                <div id="table-footer">{missions.length} / {this.props.missions.length}</div>
             </div>
         );
     }

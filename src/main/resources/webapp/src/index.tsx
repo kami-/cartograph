@@ -19,7 +19,7 @@ request.send(null)
 function renderPage(missions: Mission[]) {
     console.log("renderPage", missions);
     ReactDOM.render(
-        <MissionViewer maxVisible={30} missions={missions} />,
+        <MissionViewer maxVisible={50} missions={missions} />,
         document.getElementById("container")
     );
 }
